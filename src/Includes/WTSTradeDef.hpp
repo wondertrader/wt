@@ -44,6 +44,42 @@ protected:
 	char			m_strMsg[256] = { 0 };
 };
 
+typedef struct _WTSExtraItem
+{
+	char	m_strExchg[MAX_EXCHANGE_LENGTH] = { 0 };
+	char	m_strCode[MAX_INSTRUMENT_LENGTH] = { 0 };
+	double	m_dQuantity = 0.0;
+
+} WTSExtraItem;
+
+
+class WTSEntrustExtra : public WTSPoolObject<WTSEntrustExtra>
+{
+public:
+	constexpr uint32_t count() const { return _count; }
+
+	const WTSExtraItem& item(uint32_t idx) const
+	{
+		if (idx >= _count)
+			throw std::runtime_error("Index out of range");
+
+		return _items[idx];
+	}
+
+	WTSExtraItem& item(uint32_t idx)
+	{
+		if (idx >= _count)
+			throw std::runtime_error("Index out of range");
+
+		return _items[idx];
+	}
+
+private:
+	WTSExtraItem	_items[5] = { 0 };
+	uint32_t		_count = 0;
+};
+
+
 typedef struct _WTSEntrustStruct
 {
 	char			m_strExchg[MAX_EXCHANGE_LENGTH];
@@ -160,8 +196,12 @@ public:
 	constexpr inline void setContractInfo(WTSContractInfo* cInfo) noexcept { m_pContract = cInfo; }
 	constexpr inline WTSContractInfo* getContractInfo() const  noexcept { return m_pContract; }
 
+	constexpr inline void setExtras(WTSEntrustExtra* pExtras) noexcept { m_pExtras = pExtras; }
+	constexpr inline WTSEntrustExtra* getExtras() const  noexcept { return m_pExtras; }
+
 protected:
-	WTSContractInfo*	m_pContract;
+	WTSContractInfo*	m_pContract = nullptr;
+	WTSEntrustExtra*	m_pExtras = nullptr;
 };
 
 typedef struct _WTSActionStruct
@@ -441,8 +481,12 @@ public:
 	//是否是自成交错误
 	constexpr inline bool	isSelfTrade() const noexcept { return m_uErrorFlag == WOEF_SelfTrade; }
 
-private:
-	WTSContractInfo*	m_pContract = NULL;
+	constexpr inline void setExtras(WTSEntrustExtra* pExtras) noexcept { m_pExtras = pExtras; }
+	constexpr inline WTSEntrustExtra* getExtras() const  noexcept { return m_pExtras; }
+
+protected:
+	WTSContractInfo*	m_pContract = nullptr;
+	WTSEntrustExtra*	m_pExtras = nullptr;
 };
 
 typedef struct _WTSTradeStruct
@@ -567,8 +611,12 @@ public:
 	constexpr inline void setContractInfo(WTSContractInfo* cInfo) noexcept { m_pContract = cInfo; }
 	constexpr inline WTSContractInfo* getContractInfo() const noexcept { return m_pContract; }
 
+	constexpr inline void setExtras(WTSEntrustExtra* pExtras) noexcept { m_pExtras = pExtras; }
+	constexpr inline WTSEntrustExtra* getExtras() const  noexcept { return m_pExtras; }
+
 protected:
-	WTSContractInfo*	m_pContract = NULL;
+	WTSContractInfo*	m_pContract = nullptr;
+	WTSEntrustExtra*	m_pExtras = nullptr;
 };
 
 typedef struct _WTSPositionStruct
