@@ -1128,8 +1128,8 @@ void WtDataWriter::pipeToKlines(WTSContractInfo* ct, WTSTickData* curTick)
 				newBar->date = curTick->tradingdate();
 				newBar->time = barTime;
 				newBar->open = curTick->price();
-				newBar->high = curTick->price();
-				newBar->low = curTick->price();
+				newBar->high = curTick->isNewUpperLimit() ? curTick->high() : curTick->price();
+				newBar->low = curTick->isNewLowerLimit() ? curTick->low() : curTick->price();
 				newBar->close = curTick->price();
 
 				newBar->vol = curTick->volume();
@@ -1162,12 +1162,12 @@ void WtDataWriter::pipeToKlines(WTSContractInfo* ct, WTSTickData* curTick)
 					newBar->open = curTick->price();
 
 				if (decimal::eq(newBar->low, 0))
-					newBar->low = curTick->price();
+					newBar->low = curTick->isNewLowerLimit() ? curTick->low() : curTick->price();
 				else
-					newBar->low = std::min(curTick->price(), newBar->low);
+					newBar->low = curTick->isNewLowerLimit() ? curTick->low() : std::min(curTick->price(), newBar->low);
 
 				newBar->close = curTick->price();
-				newBar->high = std::max(curTick->price(), newBar->high);
+				newBar->high = curTick->isNewUpperLimit() ? curTick->high() : std::max(curTick->price(), newBar->high);
 
 				newBar->vol += curTick->volume();
 				newBar->money += curTick->turnover();
@@ -1234,8 +1234,8 @@ void WtDataWriter::pipeToKlines(WTSContractInfo* ct, WTSTickData* curTick)
 				newBar->date = curTick->tradingdate();
 				newBar->time = barTime;
 				newBar->open = curTick->price();
-				newBar->high = curTick->price();
-				newBar->low = curTick->price();
+				newBar->high = curTick->isNewUpperLimit() ? curTick->high() : curTick->price();
+				newBar->low = curTick->isNewLowerLimit() ? curTick->low() : curTick->price();
 				newBar->close = curTick->price();
 
 				newBar->vol = curTick->volume();
@@ -1268,12 +1268,12 @@ void WtDataWriter::pipeToKlines(WTSContractInfo* ct, WTSTickData* curTick)
 					newBar->open = curTick->price();
 
 				if (decimal::eq(newBar->low, 0))
-					newBar->low = curTick->price();
+					newBar->low = curTick->isNewLowerLimit() ? curTick->low() : curTick->price();
 				else
-					newBar->low = std::min(curTick->price(), newBar->low);
+					newBar->low = curTick->isNewLowerLimit() ? curTick->low() : std::min(curTick->price(), newBar->low);
 
 				newBar->close = curTick->price();
-				newBar->high = max(curTick->price(), newBar->high);
+				newBar->high = curTick->isNewUpperLimit() ? curTick->high() : max(curTick->price(), newBar->high);
 
 				newBar->vol += curTick->volume();
 				newBar->money += curTick->turnover();
@@ -1489,6 +1489,14 @@ bool WtDataWriter::updateCache(WTSContractInfo* ct, WTSTickData* curTick, uint32
 			newTick.diff_interest = newTick.open_interest - newTick.pre_interest;
 		}
 
+		/*
+		 *	By Wesley @ 2024.11.19
+		 *	当日新数据进来，都创了新高和新低
+		 *	但是这里也有风险，就是如果接收数据不连续，会造成问题，
+		 *	比如盘中临时接入，会导致第一条K线的最高价和最低价为当日已经出现过的最高价和最低价
+		 */
+		curTick->setLimitFlag(1|2);
+
 		//	newTick.trading_date, curTick->exchg(), curTick->code(), curTick->volume(),
 		//	curTick->turnover(), curTick->openinterest(), curTick->additional());
 		pipe_writer_log(_sink, LL_INFO, "First tick of new tradingday {},{}.{},{},{},{},{},{}", 
@@ -1526,6 +1534,17 @@ bool WtDataWriter::updateCache(WTSContractInfo* ct, WTSTickData* curTick, uint32
 			uint32_t left_msecs = (999 - newTick.action_time % 1000) / 50 * 50;
 			newTick.action_time += std::min(left_msecs, (uint32_t)200);
 		}
+
+		/*
+		 *	By Wesley @ 2024.11.19
+		 *	这里增加一个是否是创了新高和新低的判断
+		 */
+		uint32_t lmtFlag = 0;
+		if (decimal::gt(newTick.upper_limit, item._tick.upper_limit))
+			lmtFlag |= 1;
+		if (decimal::lt(newTick.lower_limit, item._tick.lower_limit))
+			lmtFlag |= 2;
+		curTick->setLimitFlag(lmtFlag);
 
 		//这里就要看需不需要预处理了
 		if(procFlag == 0)
