@@ -590,6 +590,7 @@ typedef struct _WTSPositionStruct
 	char			m_strCurrency[8] = { 0 };
 
 	WTSDirectionType	m_direction;//多空方向
+	double		m_dInitPosition;	//期初持仓
 	double		m_dPrePosition;		//昨仓
 	double		m_dNewPosition;		//今仓
 	double		m_dAvailPrePos;		//可平昨仓
@@ -603,6 +604,7 @@ typedef struct _WTSPositionStruct
 
 	_WTSPositionStruct()
 		: m_direction(WDT_LONG)
+		, m_dInitPosition(0)
 		, m_dPrePosition(0)
 		, m_dNewPosition(0)
 		, m_dAvailPrePos(0)
@@ -630,6 +632,9 @@ public:
 
 		return pRet;
 	}
+
+	constexpr inline void setInitPosition(double initPos) noexcept { m_dInitPosition = initPos; }
+	constexpr inline double	getInitPosition() const noexcept { return m_dInitPosition; }
 
 	constexpr inline void setDirection(WTSDirectionType dType) noexcept{m_direction = dType;}
 	constexpr inline void setPrePosition(double prePos) noexcept { m_dPrePosition = prePos; }
