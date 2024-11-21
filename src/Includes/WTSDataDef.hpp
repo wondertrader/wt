@@ -1015,8 +1015,8 @@ public:
 	inline void setLimitFlag(uint32_t flag) { m_uLimitFlag = flag; }
 	constexpr inline uint32_t getLimitFlag() const { return m_uLimitFlag; }
 
-	constexpr inline bool isNewUpperLimit() const { return m_uLimitFlag & 1; }
-	constexpr inline bool isNewLowerLimit() const { return m_uLimitFlag & 2; }
+	constexpr inline bool isNewHigh() const { return m_uLimitFlag & 1; }
+	constexpr inline bool isNewLow() const { return m_uLimitFlag & 2; }
 
 private:
 	WTSTickStruct		m_tickStruct;

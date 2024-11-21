@@ -1128,8 +1128,8 @@ void WtDataWriter::pipeToKlines(WTSContractInfo* ct, WTSTickData* curTick)
 				newBar->date = curTick->tradingdate();
 				newBar->time = barTime;
 				newBar->open = curTick->price();
-				newBar->high = curTick->isNewUpperLimit() ? curTick->high() : curTick->price();
-				newBar->low = curTick->isNewLowerLimit() ? curTick->low() : curTick->price();
+				newBar->high = curTick->isNewHigh() ? curTick->high() : curTick->price();
+				newBar->low = curTick->isNewLow() ? curTick->low() : curTick->price();
 				newBar->close = curTick->price();
 
 				newBar->vol = curTick->volume();
@@ -1162,12 +1162,12 @@ void WtDataWriter::pipeToKlines(WTSContractInfo* ct, WTSTickData* curTick)
 					newBar->open = curTick->price();
 
 				if (decimal::eq(newBar->low, 0))
-					newBar->low = curTick->isNewLowerLimit() ? curTick->low() : curTick->price();
+					newBar->low = curTick->isNewLow() ? curTick->low() : curTick->price();
 				else
-					newBar->low = curTick->isNewLowerLimit() ? curTick->low() : std::min(curTick->price(), newBar->low);
+					newBar->low = curTick->isNewLow() ? curTick->low() : std::min(curTick->price(), newBar->low);
 
 				newBar->close = curTick->price();
-				newBar->high = curTick->isNewUpperLimit() ? curTick->high() : std::max(curTick->price(), newBar->high);
+				newBar->high = curTick->isNewHigh() ? curTick->high() : std::max(curTick->price(), newBar->high);
 
 				newBar->vol += curTick->volume();
 				newBar->money += curTick->turnover();
@@ -1234,8 +1234,8 @@ void WtDataWriter::pipeToKlines(WTSContractInfo* ct, WTSTickData* curTick)
 				newBar->date = curTick->tradingdate();
 				newBar->time = barTime;
 				newBar->open = curTick->price();
-				newBar->high = curTick->isNewUpperLimit() ? curTick->high() : curTick->price();
-				newBar->low = curTick->isNewLowerLimit() ? curTick->low() : curTick->price();
+				newBar->high = curTick->isNewHigh() ? curTick->high() : curTick->price();
+				newBar->low = curTick->isNewLow() ? curTick->low() : curTick->price();
 				newBar->close = curTick->price();
 
 				newBar->vol = curTick->volume();
@@ -1268,12 +1268,12 @@ void WtDataWriter::pipeToKlines(WTSContractInfo* ct, WTSTickData* curTick)
 					newBar->open = curTick->price();
 
 				if (decimal::eq(newBar->low, 0))
-					newBar->low = curTick->isNewLowerLimit() ? curTick->low() : curTick->price();
+					newBar->low = curTick->isNewLow() ? curTick->low() : curTick->price();
 				else
-					newBar->low = curTick->isNewLowerLimit() ? curTick->low() : std::min(curTick->price(), newBar->low);
+					newBar->low = curTick->isNewLow() ? curTick->low() : std::min(curTick->price(), newBar->low);
 
 				newBar->close = curTick->price();
-				newBar->high = curTick->isNewUpperLimit() ? curTick->high() : max(curTick->price(), newBar->high);
+				newBar->high = curTick->isNewHigh() ? curTick->high() : max(curTick->price(), newBar->high);
 
 				newBar->vol += curTick->volume();
 				newBar->money += curTick->turnover();
@@ -1464,25 +1464,25 @@ bool WtDataWriter::updateCache(WTSContractInfo* ct, WTSTickData* curTick, uint32
 	}
 
 
-	TickCacheItem& item = _tick_cache_block->_ticks[idx];
-	if (curTick->tradingdate() < item._date)
+	TickCacheItem& cache = _tick_cache_block->_ticks[idx];
+	if (curTick->tradingdate() < cache._date)
 	{
-		pipe_writer_log(_sink, LL_INFO, "Tradingday[{}] of {} is less than cached tradingday[{}]", curTick->tradingdate(), curTick->code(), item._date);
+		pipe_writer_log(_sink, LL_INFO, "Tradingday[{}] of {} is less than cached tradingday[{}]", curTick->tradingdate(), curTick->code(), cache._date);
 		return false;
 	}
 
 	WTSTickStruct& newTick = curTick->getTickStruct();
 
-	if (curTick->tradingdate() > item._date)
+	if (curTick->tradingdate() > cache._date)
 	{
 		//新数据交易日大于老数据,则认为是新一天的数据
-		item._date = curTick->tradingdate();
-		memcpy(&item._tick, &newTick, sizeof(WTSTickStruct));
+		cache._date = curTick->tradingdate();
+		memcpy(&cache._tick, &newTick, sizeof(WTSTickStruct));
 		if (procFlag==1)
 		{
-			item._tick.volume = item._tick.total_volume;
-			item._tick.turn_over = item._tick.total_turnover;
-			item._tick.diff_interest = item._tick.open_interest - item._tick.pre_interest;
+			cache._tick.volume = cache._tick.total_volume;
+			cache._tick.turn_over = cache._tick.total_turnover;
+			cache._tick.diff_interest = cache._tick.open_interest - cache._tick.pre_interest;
 
 			newTick.volume = newTick.total_volume;
 			newTick.turn_over = newTick.total_turnover;
@@ -1514,10 +1514,10 @@ bool WtDataWriter::updateCache(WTSContractInfo* ct, WTSTickData* curTick, uint32
 			pipe_writer_log(_sink, LL_WARN, "Last tick of {}.{} with time {}.{} has an exception, abandoned", curTick->exchg(), curTick->code(), curTick->actiondate(), curTick->actiontime());
 			return false;
 		}
-		else if (curTick->totalvolume() < item._tick.total_volume)
+		else if (curTick->totalvolume() < cache._tick.total_volume)
 		{
 			pipe_writer_log(_sink, LL_WARN, "Last tick of {}.{} with time {}.{}, volume {} is less than cached volume {}, abandoned",
-				curTick->exchg(), curTick->code(), curTick->actiondate(), curTick->actiontime(), curTick->totalvolume(), item._tick.total_volume);
+				curTick->exchg(), curTick->code(), curTick->actiondate(), curTick->actiontime(), curTick->totalvolume(), cache._tick.total_volume);
 			return false;
 		}
 
@@ -1525,7 +1525,7 @@ bool WtDataWriter::updateCache(WTSContractInfo* ct, WTSTickData* curTick, uint32
 		//By Wesley @ 2021.12.21
 		//今天发现居然一秒出现了4笔，实在是有点无语
 		//只能把500毫秒的变化量改成200，并且改成发生时间小于等于上一笔的判断
-		if(newTick.action_date == item._tick.action_date && newTick.action_time <= item._tick.action_time && newTick.total_volume >= item._tick.total_volume)
+		if(newTick.action_date == cache._tick.action_date && newTick.action_time <= cache._tick.action_time && newTick.total_volume >= cache._tick.total_volume)
 		{
 			/*
 			 *	By Wesley @ 2024.08.29
@@ -1540,24 +1540,24 @@ bool WtDataWriter::updateCache(WTSContractInfo* ct, WTSTickData* curTick, uint32
 		 *	这里增加一个是否是创了新高和新低的判断
 		 */
 		uint32_t lmtFlag = 0;
-		if (decimal::gt(newTick.upper_limit, item._tick.upper_limit))
+		if (decimal::gt(newTick.high, cache._tick.high))
 			lmtFlag |= 1;
-		if (decimal::lt(newTick.lower_limit, item._tick.lower_limit))
+		if (decimal::lt(newTick.low, cache._tick.low))
 			lmtFlag |= 2;
 		curTick->setLimitFlag(lmtFlag);
 
 		//这里就要看需不需要预处理了
 		if(procFlag == 0)
 		{
-			memcpy(&item._tick, &newTick, sizeof(WTSTickStruct));
+			memcpy(&cache._tick, &newTick, sizeof(WTSTickStruct));
 		}
 		else
 		{
-			newTick.volume = newTick.total_volume - item._tick.total_volume;
-			newTick.turn_over = newTick.total_turnover - item._tick.total_turnover;
-			newTick.diff_interest = newTick.open_interest - item._tick.open_interest;
+			newTick.volume = newTick.total_volume - cache._tick.total_volume;
+			newTick.turn_over = newTick.total_turnover - cache._tick.total_turnover;
+			newTick.diff_interest = newTick.open_interest - cache._tick.open_interest;
 
-			memcpy(&item._tick, &newTick, sizeof(WTSTickStruct));
+			memcpy(&cache._tick, &newTick, sizeof(WTSTickStruct));
 		}
 
 		//pipe_writer_log(_sink, LL_DEBUG, "Tick cache data updated {}[{}.{}]", newTick.code, newTick.action_date, newTick.action_time);
