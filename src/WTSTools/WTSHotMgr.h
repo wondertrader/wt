@@ -44,6 +44,8 @@ public:
 
 	inline bool isInitialized() const {return m_bInitialized;}
 
+	const std::vector<std::string>& getHotTags() const;
+
 public:
 	virtual const char* getRuleTag(const char* stdCode) override;
 

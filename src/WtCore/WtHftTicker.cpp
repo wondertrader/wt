@@ -55,12 +55,12 @@ void WtHftRtTicker::trigger_price(WTSTickData* curTick)
 		std::string stdCode = curTick->code();
 		_engine->on_tick(stdCode.c_str(), curTick);
 
-		if (!cInfo->isFlat())
+		auto hotCodes = cInfo->getHotCodes();
+		for (const std::string& hotCode : hotCodes)
 		{
 			WTSTickData* hotTick = WTSTickData::create(curTick->getTickStruct());
-			const char* hotCode = cInfo->getHotCode();
-			hotTick->setCode(hotCode);
-			_engine->on_tick(hotCode, hotTick);
+			hotTick->setCode(hotCode.c_str());
+			_engine->on_tick(hotCode.c_str(), hotTick);
 			hotTick->release();
 		}
 	}

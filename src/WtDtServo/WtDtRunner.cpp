@@ -131,22 +131,23 @@ void WtDtRunner::initialize(const char* cfgFile, bool isFile /* = true */, const
 		WTSLogger::info("Second rules loaded");
 	}
 
+	auto& ayHotTags = _hot_mgr.getHotTags();
 	WTSArray* ayContracts = _bd_mgr.getContracts();
 	for (auto it = ayContracts->begin(); it != ayContracts->end(); it++)
 	{
 		WTSContractInfo* cInfo = (WTSContractInfo*)(*it);
-		bool isHot = _hot_mgr.isHot(cInfo->getExchg(), cInfo->getCode());
-		bool isSecond = _hot_mgr.isSecond(cInfo->getExchg(), cInfo->getCode());
 
-		std::string hotCode = cInfo->getFullPid();
-		if (isHot)
-			hotCode += ".HOT";
-		else if (isSecond)
-			hotCode += ".2ND";
-		else
-			hotCode = "";
+		for (const std::string& hotTag : ayHotTags)
+		{
+			bool isHot = _hot_mgr.isCustomHot(hotTag.c_str(), cInfo->getFullCode(), 0);
+			if (!isHot)
+				continue;
 
-		cInfo->setHotFlag(isHot ? 1 : (isSecond ? 2 : 0), hotCode.c_str());
+			std::string hotCode = cInfo->getFullPid();
+			hotCode += ".";
+			hotCode += hotTag;
+			cInfo->addHotCode(hotCode.c_str());
+		}
 	}
 	ayContracts->release();
 
@@ -447,26 +448,18 @@ void WtDtRunner::proc_tick(WTSTickData* curTick)
 
 	if (!cInfo->isFlat())
 	{
-		const char* hotCode = cInfo->getHotCode();
-		WTSTickData* hotTick = WTSTickData::create(curTick->getTickStruct());
-		hotTick->setCode(hotCode);
-		hotTick->setContractInfo(curTick->getContractInfo());
+		auto hotCodes = cInfo->getHotCodes();
+		for (const std::string& hotCode : hotCodes)
+		{
+			WTSTickData* hotTick = WTSTickData::create(curTick->getTickStruct());
+			hotTick->setCode(hotCode.c_str());
+			hotTick->setContractInfo(curTick->getContractInfo());
 
-		trigger_tick(hotCode, hotTick);
+			trigger_tick(hotCode.c_str(), hotTick);
 
-		hotTick->release();
+			hotTick->release();
+		}
 	}
-	//else if (hotflag == 2)
-	//{
-	//	std::string scndCode = CodeHelper::stdCodeToStd2ndCode(stdCode.c_str());
-	//	WTSTickData* scndTick = WTSTickData::create(curTick->getTickStruct());
-	//	scndTick->setCode(scndCode.c_str());
-	//	scndTick->setContractInfo(curTick->getContractInfo());
-
-	//	trigger_tick(scndCode.c_str(), scndTick);
-
-	//	scndTick->release();
-	//}
 }
 
 void WtDtRunner::trigger_tick(const char* stdCode, WTSTickData* curTick)

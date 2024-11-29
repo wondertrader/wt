@@ -57,11 +57,14 @@ void WtSelRtTicker::trigger_price(WTSTickData* curTick, uint32_t hotFlag /* = 0 
 		WTSContractInfo* cInfo = curTick->getContractInfo();
 		if (!cInfo->isFlat())
 		{
-			WTSTickData* hotTick = WTSTickData::create(curTick->getTickStruct());
-			const char* hotCode = cInfo->getHotCode();
-			hotTick->setCode(hotCode);
-			_engine->on_tick(hotCode, hotTick);
-			hotTick->release();
+			auto hotCodes = cInfo->getHotCodes();
+			for (const std::string& hotCode : hotCodes)
+			{
+				WTSTickData* hotTick = WTSTickData::create(curTick->getTickStruct());
+				hotTick->setCode(hotCode.c_str());
+				_engine->on_tick(hotCode.c_str(), hotTick);
+				hotTick->release();
+			}
 		}
 	}
 }

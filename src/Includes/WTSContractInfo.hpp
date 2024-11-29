@@ -291,15 +291,15 @@ public:
 		return (int32_t)(ret * 100 + 0.5) / 100.0;
 	}
 
-	inline void setHotFlag(uint32_t hotFlag, const char* hotCode = "") noexcept
+	inline void addHotCode(const char* hotCode) noexcept
 	{ 
-		m_uHotFlag = hotFlag; 
-		wt_strcpy(m_strHotCode, hotCode);
+		m_ayHotCodes.emplace_back(hotCode);
 	}
-	constexpr inline bool isFlat() const  noexcept { return m_uHotFlag == 0; }
-	constexpr inline bool isHot() const  noexcept { return m_uHotFlag == 1; }
-	constexpr inline bool isSecond() const  noexcept { return m_uHotFlag == 2; }
-	constexpr inline const char* getHotCode() const  noexcept { return m_strHotCode; }
+	inline bool isFlat() const  noexcept { return m_ayHotCodes.empty(); }
+	//constexpr inline bool isHot() const  noexcept { return m_uHotFlag == 1; }
+	//constexpr inline bool isSecond() const  noexcept { return m_uHotFlag == 2; }
+	//constexpr inline const char* getHotCode() const  noexcept { return m_strHotCode; }
+	inline const std::vector<std::string>& getHotCodes() const { return m_ayHotCodes; }
 
 	constexpr inline void	setTotalIndex(uint32_t idx) noexcept { m_uTotalIdx = idx; }
 	constexpr inline uint32_t getTotalIndex() const noexcept { return m_uTotalIdx; }
@@ -314,7 +314,7 @@ protected:
 	WTSContractInfo()
 		: m_commInfo(NULL), m_openDate(19900101), m_expireDate(30991231)
 		, m_lMarginRatio(0), m_sMarginRatio(0), m_nFeeAlg(-1), m_uMarginFlag(0)
-		, m_uHotFlag(0), m_uTotalIdx(UINT_MAX){}
+		, m_uTotalIdx(UINT_MAX){}
 	virtual ~WTSContractInfo(){}
 
 private:
@@ -349,8 +349,8 @@ private:
 	int			m_nFeeAlg		= -1;	//手续费算法，默认为-1，不计算,0是按成交量，1为按成交额
 
 	WTSCommodityInfo*	m_commInfo;
-	uint32_t	m_uHotFlag;
-	char		m_strHotCode[64];
+	std::vector<std::string> m_ayHotCodes;
+	
 
 	uint32_t	m_uTotalIdx;				//合约全局索引，每次启动可能不同，只能在内存里用
 	void*		m_pExtData[16] = { 0 };		//扩展数据，主要是绑定一些和合约相关的数据，这样可以避免在很多地方建map，导致多次查找
