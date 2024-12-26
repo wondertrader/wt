@@ -196,11 +196,15 @@ void WtEngine::update_fund_dynprofit()
 	}
 
 	double profit = 0.0;
-	for(const auto& v : _pos_map)
 	{
-		const PosInfoPtr& pItem = v.second;
-		profit += pItem->_dynprofit;
+		SpinLock lock(_pos_mtx);
+		for (const auto& v : _pos_map)
+		{
+			const PosInfoPtr& pItem = v.second;
+			profit += pItem->_dynprofit;
+		}
 	}
+	
 
 	fundInfo._dynprofit = profit;
 	double dynbal = fundInfo._balance + profit;
@@ -951,9 +955,16 @@ void WtEngine::append_signal(const char* stdCode, double qty, bool bStandBy /* =
 
 void WtEngine::do_set_position(const char* stdCode, double qty, double curPx /* = -1 */)
 {
+	{
+		SpinLock lock(_pos_mtx);
+		auto it = _pos_map.find(stdCode);
+		if (it == _pos_map.end())
+		{
+			_pos_map[stdCode] = std::make_shared<PosInfo>();
+		}
+	}
+
 	PosInfoPtr& pInfo = _pos_map[stdCode];
-	if (pInfo == NULL)
-		pInfo.reset(new PosInfo);
 
 	SpinLock lock(pInfo->_mtx);
 

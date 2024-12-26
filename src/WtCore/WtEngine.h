@@ -295,6 +295,7 @@ protected:
 	typedef std::shared_ptr<PosInfo> PosInfoPtr;
 	typedef wt_hashmap<std::string, PosInfoPtr> PositionMap;
 	PositionMap		_pos_map;
+	SpinMutex		_pos_mtx;
 
 	//////////////////////////////////////////////////////////////////////////
 	//

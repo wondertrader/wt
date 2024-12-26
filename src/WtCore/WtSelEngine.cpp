@@ -438,9 +438,17 @@ void WtSelEngine::handle_pos_change(const char* straName, const char* stdCode, d
 	//	realCode = CodeHelper::rawMonthCodeToStdCode(code.c_str(), cInfo._exchg);
 	//}
 
+	{
+		SpinLock lock(_pos_mtx);
+		auto it = _pos_map.find(realCode);
+		if (it == _pos_map.end())
+		{
+			_pos_map[realCode] = std::make_shared<PosInfo>();
+		}
+	}
+
 	PosInfoPtr& pInfo = _pos_map[realCode];
-	if (pInfo == NULL)
-		pInfo.reset(new PosInfo);
+
 	bool bRiskEnabled = false;
 	if (!decimal::eq(_risk_volscale, 1.0) && _risk_date == _cur_tdate)
 	{
