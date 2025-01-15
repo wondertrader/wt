@@ -145,6 +145,19 @@ bool WTSHotMgr::isHot(const char* exchg, const char* rawCode, uint32_t dt)
 	return isCustomHot("HOT", fullCode, dt);
 }
 
+const std::vector<std::string>& WTSHotMgr::getHotTags() const
+{
+	static std::vector<std::string> ayTags;
+	if(ayTags.empty())
+	{
+		for(auto& v : m_mapCustCodes)
+		{
+			ayTags.emplace_back(v.first);
+		}
+	}
+	return ayTags;
+}
+
 bool WTSHotMgr::splitHotSecions(const char* exchg, const char* pid, uint32_t sDt, uint32_t eDt, HotSections& sections)
 {
 	static thread_local char fullPid[64] = { 0 };
@@ -181,7 +194,7 @@ bool WTSHotMgr::isSecond(const char* exchg, const char* rawCode, uint32_t dt)
 	static thread_local char fullCode[64] = { 0 };
 	fmtutil::format_to(fullCode, "{}.{}", exchg, rawCode);
 
-	return isCustomHot("2NDT", fullCode, dt);
+	return isCustomHot("2ND", fullCode, dt);
 }
 
 bool WTSHotMgr::splitSecondSecions(const char* exchg, const char* pid, uint32_t sDt, uint32_t eDt, HotSections& sections)

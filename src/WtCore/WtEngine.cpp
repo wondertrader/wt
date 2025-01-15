@@ -196,11 +196,15 @@ void WtEngine::update_fund_dynprofit()
 	}
 
 	double profit = 0.0;
-	for(const auto& v : _pos_map)
 	{
-		const PosInfoPtr& pItem = v.second;
-		profit += pItem->_dynprofit;
+		SpinLock lock(_pos_mtx);
+		for (const auto& v : _pos_map)
+		{
+			const PosInfoPtr& pItem = v.second;
+			profit += pItem->_dynprofit;
+		}
 	}
+	
 
 	fundInfo._dynprofit = profit;
 	double dynbal = fundInfo._balance + profit;
@@ -650,28 +654,19 @@ void WtEngine::handle_push_quote(WTSTickData* curTick)
 	//if(hotFlag == 1)
 	if(!cInfo->isFlat())
 	{
-		const char* hotCode = cInfo->getHotCode();
-		WTSTickData* hotTick = WTSTickData::create(curTick->getTickStruct());
-		hotTick->setCode(hotCode);
-		hotTick->setContractInfo(curTick->getContractInfo());
+		auto hotCodes = cInfo->getHotCodes();
+		for (const std::string& hotCode : hotCodes)
+		{
+			WTSTickData* hotTick = WTSTickData::create(curTick->getTickStruct());
+			hotTick->setCode(hotCode.c_str());
+			hotTick->setContractInfo(curTick->getContractInfo());
 
-		_data_mgr->handle_push_quote(hotCode, hotTick);
-		on_tick(hotCode, hotTick);
+			_data_mgr->handle_push_quote(hotCode.c_str(), hotTick);
+			on_tick(hotCode.c_str(), hotTick);
 
-		hotTick->release();
+			hotTick->release();
+		}		
 	}
-	//else if (hotFlag == 2)
-	//{
-	//	std::string scndCode = CodeHelper::stdCodeToStd2ndCode(stdCode.c_str());
-	//	WTSTickData* scndTick = WTSTickData::create(curTick->getTickStruct());
-	//	scndTick->setCode(scndCode.c_str());
-	//	scndTick->setContractInfo(curTick->getContractInfo());
-
-	//	_data_mgr->handle_push_quote(scndCode.c_str(), scndTick);
-	//	on_tick(scndCode.c_str(), scndTick);
-
-	//	scndTick->release();
-	//}
 }
 
 double WtEngine::get_cur_price(const char* stdCode)
@@ -960,9 +955,16 @@ void WtEngine::append_signal(const char* stdCode, double qty, bool bStandBy /* =
 
 void WtEngine::do_set_position(const char* stdCode, double qty, double curPx /* = -1 */)
 {
+	{
+		SpinLock lock(_pos_mtx);
+		auto it = _pos_map.find(stdCode);
+		if (it == _pos_map.end())
+		{
+			_pos_map[stdCode] = std::make_shared<PosInfo>();
+		}
+	}
+
 	PosInfoPtr& pInfo = _pos_map[stdCode];
-	if (pInfo == NULL)
-		pInfo.reset(new PosInfo);
 
 	SpinLock lock(pInfo->_mtx);
 

@@ -160,8 +160,12 @@ public:
 	constexpr inline void setContractInfo(WTSContractInfo* cInfo) noexcept { m_pContract = cInfo; }
 	constexpr inline WTSContractInfo* getContractInfo() const  noexcept { return m_pContract; }
 
+	constexpr inline void setExtras(WTSVariant* pExtras) noexcept { m_pExtras = pExtras; }
+	constexpr inline WTSVariant* getExtras() const  noexcept { return m_pExtras; }
+
 protected:
-	WTSContractInfo*	m_pContract;
+	WTSContractInfo*	m_pContract = nullptr;
+	WTSVariant*			m_pExtras = nullptr;
 };
 
 typedef struct _WTSActionStruct
@@ -441,8 +445,12 @@ public:
 	//是否是自成交错误
 	constexpr inline bool	isSelfTrade() const noexcept { return m_uErrorFlag == WOEF_SelfTrade; }
 
-private:
-	WTSContractInfo*	m_pContract = NULL;
+	constexpr inline void setExtras(WTSVariant* pExtras) noexcept { m_pExtras = pExtras; }
+	constexpr inline WTSVariant* getExtras() const  noexcept { return m_pExtras; }
+
+protected:
+	WTSContractInfo*	m_pContract = nullptr;
+	WTSVariant*			m_pExtras = nullptr;
 };
 
 typedef struct _WTSTradeStruct
@@ -567,8 +575,12 @@ public:
 	constexpr inline void setContractInfo(WTSContractInfo* cInfo) noexcept { m_pContract = cInfo; }
 	constexpr inline WTSContractInfo* getContractInfo() const noexcept { return m_pContract; }
 
+	constexpr inline void setExtras(WTSVariant* pExtras) noexcept { m_pExtras = pExtras; }
+	constexpr inline WTSVariant* getExtras() const  noexcept { return m_pExtras; }
+
 protected:
-	WTSContractInfo*	m_pContract = NULL;
+	WTSContractInfo*	m_pContract = nullptr;
+	WTSVariant*			m_pExtras = nullptr;
 };
 
 typedef struct _WTSPositionStruct
@@ -578,6 +590,7 @@ typedef struct _WTSPositionStruct
 	char			m_strCurrency[8] = { 0 };
 
 	WTSDirectionType	m_direction;//多空方向
+	double		m_dInitPosition;	//期初持仓
 	double		m_dPrePosition;		//昨仓
 	double		m_dNewPosition;		//今仓
 	double		m_dAvailPrePos;		//可平昨仓
@@ -591,6 +604,7 @@ typedef struct _WTSPositionStruct
 
 	_WTSPositionStruct()
 		: m_direction(WDT_LONG)
+		, m_dInitPosition(0)
 		, m_dPrePosition(0)
 		, m_dNewPosition(0)
 		, m_dAvailPrePos(0)
@@ -618,6 +632,9 @@ public:
 
 		return pRet;
 	}
+
+	constexpr inline void setInitPosition(double initPos) noexcept { m_dInitPosition = initPos; }
+	constexpr inline double	getInitPosition() const noexcept { return m_dInitPosition; }
 
 	constexpr inline void setDirection(WTSDirectionType dType) noexcept{m_direction = dType;}
 	constexpr inline void setPrePosition(double prePos) noexcept { m_dPrePosition = prePos; }
